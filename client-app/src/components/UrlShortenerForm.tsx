@@ -1,10 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Importando o useNavigate para redirecionamento
+import { useMsal } from "@azure/msal-react";
 import "../components/urlShortenerForm.css";
+import LogoutButton from "./LogoutButton";
 
 const UrlShortenerForm: React.FC = () => {
   const [fullUrl, setFullUrl] = useState<string>("");
   const [shortUrl, setShortUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const { accounts } = useMsal(); // Pegando as contas autenticadas
+  const navigate = useNavigate(); // Hook de navegação para redirecionar
+
+  // Verifique se o usuário está autenticado
+  useEffect(() => {
+    if (!accounts || accounts.length === 0) {
+      // Caso não haja conta logada, redireciona para a página de login
+      navigate("/login"); // Rota de login, altere se necessário
+    }
+  }, [accounts, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +48,10 @@ const UrlShortenerForm: React.FC = () => {
   return (
     <div className="container">
       <h1 className="title">Encurtador de link</h1>
+      
+      {/* Adicionando o botão de logout */}
+      <LogoutButton />
+
       <form className="form" onSubmit={handleSubmit}>
         <label className="label">
           URL Completa:
@@ -52,18 +70,18 @@ const UrlShortenerForm: React.FC = () => {
       </form>
 
       {shortUrl && (
-  <div className="shortUrlContainer">
-    <h2>Link Encurtado:</h2>
-    <a
-      href={`http://localhost:5001/api/shortUrl/${shortUrl}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="shortUrlLink"
-    >
-      {`http://localhost:5001/api/shortUrl/${shortUrl}`}
-    </a>
-  </div>
-)}
+        <div className="shortUrlContainer">
+          <h2>Link Encurtado:</h2>
+          <a
+            href={`http://localhost:5001/api/shortUrl/${shortUrl}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shortUrlLink"
+          >
+            {`http://localhost:5001/api/shortUrl/${shortUrl}`}
+          </a>
+        </div>
+      )}
 
       {error && (
         <div className={`message error`}>
