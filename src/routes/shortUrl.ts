@@ -1,11 +1,10 @@
-import express from "express"
+import express from "express";
 import { createUrl, deleteUrl, getAllUrl, getUrl } from "../controllers/shortUrl";
 
 const router = express.Router();
 
 router.post("/shortUrl", createUrl);
 router.get("/shortUrl", getAllUrl);
-router.get("/shortUrl/:id", getUrl);
-router.delete("/shortUrl/:id", deleteUrl);
-
+router.get("/shortUrl/:shortUrl", getUrl); // Alterei para :shortUrl, para refletir o parâmetro correto
+router.delete("/shortUrl/:id", deleteUrl); // Para deletar por ID
 export default router;

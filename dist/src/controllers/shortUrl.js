@@ -1,76 +1,120 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
+    // ... (código gerado permanece igual)
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteUrl = exports.getUrl = exports.getAllUrl = exports.createUrl = void 0;
+
 const shortUrl_1 = require("../model/shortUrl");
+const { nanoid } = require("nanoid"); // Certifique-se de importar o nanoid!
+
+// ======================== CREATE ========================
 const createUrl = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        console.log("The fullUrl is", req.body.fullUrl);
         const { fullUrl } = req.body;
-        const urlFound = yield shortUrl_1.urlModel.find({ fullUrl });
-        if (urlFound.length > 0) {
-            res.status(409);
-            res.send(urlFound);
+        
+        // Normaliza a URL antes de verificar existência
+        const normalizedUrl = normalizeUrl(fullUrl); // Função de normalização
+        
+        // Verifica se a URL já existe
+        let urlFound = yield shortUrl_1.urlModel.findOne({ fullUrl: normalizedUrl });
+        if (urlFound) {
+            // Se o link já foi encurtado, retorna a URL encurtada existente
+            return res.status(200).send({
+                message: "URL already shortened",
+                shortUrl: urlFound.shortUrl
+            });
         }
-        else {
-            const shortUrl = yield shortUrl_1.urlModel.create({ fullUrl });
-            res.status(201).send(shortUrl);
+
+        // Se não existe, cria um novo link encurtado
+        const newShortUrl = nanoid(10); // Gera o shortUrl
+        const newUrl = yield shortUrl_1.urlModel.create({
+            fullUrl: normalizedUrl,
+            shortUrl: newShortUrl // A URL encurtada gerada
+        });
+
+        res.status(201).send({
+            message: "URL shortened successfully",
+            shortUrl: newUrl.shortUrl
+        });
+
+    } catch (error) {
+        if (error.code === 11000) { // Duplicata de shortUrl
+            yield handleDuplicateShortUrl(res, fullUrl); // Tenta recriar
+        } else {
+            res.status(500).send({ message: "Internal server error" });
         }
-    }
-    catch (error) {
-        res.status(500).send({ message: "Something went wrong!" });
     }
 });
-exports.createUrl = createUrl;
+
+// ======================== GET ALL ========================
 const getAllUrl = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const shortUrls = yield shortUrl_1.urlModel.find();
-        if (shortUrls.length < 0) {
-            res.status(404).send({ message: "Short Urls not found!" });
-        }
-        else {
-            res.status(200).send(shortUrls);
-        }
-    }
-    catch (error) {
-        res.status(500).send({ message: "Something went wrong!" });
+        res.status(200).send(shortUrls); // Sempre retorna array, mesmo vazio
+    } catch (error) {
+        res.status(500).send({ message: "Internal server error" });
     }
 });
-exports.getAllUrl = getAllUrl;
+
+// ======================== REDIRECT ========================
 const getUrl = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const shortUrl = yield shortUrl_1.urlModel.findOne({ shortUrl: req.params.id });
-        if (!shortUrl) {
-            res.status(404).send({ message: "Full Url not found!" });
+        const { shortUrl } = req.params; // Correção crucial aqui!
+        
+        const url = yield shortUrl_1.urlModel.findOne({ shortUrl });
+        if (!url) {
+            return res.status(404).send({ message: "URL not found" });
         }
-        else {
-            shortUrl.clicks++;
-            shortUrl.save();
-            res.redirect(`${shortUrl.fullUrl}`);
-        }
-    }
-    catch (error) {
-        res.status(500).send({ message: "Something went wrong!" });
+
+        url.clicks++;
+        yield url.save(); // Await importante aqui
+        
+        res.redirect(url.fullUrl);
+
+    } catch (error) {
+        res.status(500).send({ message: "Internal server error" });
     }
 });
-exports.getUrl = getUrl;
+
+// ======================== DELETE ========================
 const deleteUrl = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const shortUrl = yield shortUrl_1.urlModel.findByIdAndDelete({ _id: req.params.id });
-        if (shortUrl) {
-            res.status(200).send({ message: "Requested URL successfully Deleted!" });
+        const { shortUrl } = req.params; // Usando shortUrl agora
+        
+        const deletedUrl = yield shortUrl_1.urlModel.findOneAndDelete({ shortUrl });
+        if (!deletedUrl) {
+            return res.status(404).send({ message: "URL not found" });
         }
-    }
-    catch (error) {
-        res.status(500).send({ message: "Something went wrong!" });
+        
+        res.status(200).send({ message: "URL deleted successfully" });
+
+    } catch (error) {
+        res.status(500).send({ message: "Internal server error" });
     }
 });
+
+// ======================== HELPER FUNCTIONS ========================
+const normalizeUrl = (url) => {
+    // Garante que o URL tenha protocolo
+    if (!/^https?:\/\//i.test(url)) {
+        return `https://${url}`;
+    }
+    return url;
+};
+
+const handleDuplicateShortUrl = (res, fullUrl) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const newShortUrl = nanoid(10); // Gera novo shortUrl
+        const newUrl = yield shortUrl_1.urlModel.create({ 
+            fullUrl,
+            shortUrl: newShortUrl // Força nova geração
+        });
+        res.status(201).send(newUrl);
+    } catch (error) {
+        res.status(500).send({ message: "Failed to generate unique short URL" });
+    }
+});
+
 exports.deleteUrl = deleteUrl;
+exports.getUrl = getUrl;
+exports.getAllUrl = getAllUrl;
+exports.createUrl = createUrl;

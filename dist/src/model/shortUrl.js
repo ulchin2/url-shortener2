@@ -6,11 +6,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.urlModel = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const nanoid_1 = require("nanoid");
-// Define o esquema
+//esqueminha
 const shortUrlSchema = new mongoose_1.default.Schema({
     fullUrl: {
         type: String,
         required: true,
+        validate: {
+            validator: function (value) {
+                try {
+                    new URL(value);
+                    return true;
+                }
+                catch (_a) {
+                    return false;
+                }
+            },
+            message: "Invalid URL format"
+        }
     },
     shortUrl: {
         type: String,
@@ -24,12 +36,11 @@ const shortUrlSchema = new mongoose_1.default.Schema({
 }, {
     timestamps: true,
 });
-// Middleware para adicionar o protocolo ao campo fullUrl
+// Middleware para adicionar o protocolo ao fullUrl
 shortUrlSchema.pre("save", function (next) {
     if (!/^https?:\/\//i.test(this.fullUrl)) {
         this.fullUrl = `https://${this.fullUrl}`;
     }
     next();
 });
-// Exporta o modelo
 exports.urlModel = mongoose_1.default.model("ShortUrl", shortUrlSchema);

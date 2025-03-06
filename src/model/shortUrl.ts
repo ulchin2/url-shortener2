@@ -7,11 +7,23 @@ const shortUrlSchema = new mongoose.Schema(
     fullUrl: {
       type: String,
       required: true,
+      validate:{
+        validator: function (value: string): boolean {
+          try{
+            new URL(value);
+            return true;
+          }catch{
+            return false;
+          }
+        },
+        message: "Invalid URL format"
+      }
     },
     shortUrl: {
       type: String,
       required: true,
-      default: () => nanoid().substring(0, 10),
+      unique: true,
+      default: () => nanoid(10)
     },
     clicks: {
       type: Number,
@@ -24,12 +36,9 @@ const shortUrlSchema = new mongoose.Schema(
 );
 
 // Middleware para adicionar o protocolo ao fullUrl
-shortUrlSchema.pre("save", function (next) {
-  if (!/^https?:\/\//i.test(this.fullUrl)) {
-    this.fullUrl = `https://${this.fullUrl}`;
-  }
-  next();
-});
+
+
+
 
 
 export const urlModel = mongoose.model("ShortUrl", shortUrlSchema);

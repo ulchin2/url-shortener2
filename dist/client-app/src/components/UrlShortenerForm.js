@@ -31,13 +31,28 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const react_1 = __importStar(require("react"));
-const style_1 = require("../components/style");
+const react_router_dom_1 = require("react-router-dom"); // Importando o useNavigate para redirecionamento
+const msal_react_1 = require("@azure/msal-react");
+require("../components/urlShortenerForm.css");
+const LogoutButton_1 = __importDefault(require("./LogoutButton"));
 const UrlShortenerForm = () => {
     const [fullUrl, setFullUrl] = (0, react_1.useState)("");
     const [shortUrl, setShortUrl] = (0, react_1.useState)(null);
     const [error, setError] = (0, react_1.useState)(null);
+    const { accounts } = (0, msal_react_1.useMsal)(); // Pegando as contas autenticadas
+    const navigate = (0, react_router_dom_1.useNavigate)(); // Hook de navegação para redirecionar
+    // Verifique se o usuário está autenticado
+    (0, react_1.useEffect)(() => {
+        if (!accounts || accounts.length === 0) {
+            // Caso não haja conta logada, redireciona para a página de login
+            navigate("/login"); // Rota de login, altere se necessário
+        }
+    }, [accounts, navigate]);
     const handleSubmit = (e) => __awaiter(void 0, void 0, void 0, function* () {
         e.preventDefault();
         setError(null);
@@ -56,31 +71,38 @@ const UrlShortenerForm = () => {
             else {
                 const err = yield response.json();
                 setError(err.message || "Something went wrong!");
-                console.log(err);
             }
         }
         catch (err) {
             setError("Failed to connect to the server.");
         }
     });
-    return (<style_1.Container>
-      <style_1.Title>URL Shortener</style_1.Title>
-      <style_1.Form onSubmit={handleSubmit}>
-        <style_1.Label>
-          Full URL:
-          <style_1.Input type="text" value={fullUrl} onChange={(e) => setFullUrl(e.target.value)} placeholder="Enter the URL to shorten" required/>
-        </style_1.Label>
-        <style_1.Button type="submit">Shorten URL</style_1.Button>
-      </style_1.Form>
+    return (<div className="container">
+      <h1 className="title">Encurtador de link</h1>
+      
+      {/* Adicionando o botão de logout */}
+      <LogoutButton_1.default />
 
-      {shortUrl && (<style_1.ShortUrlContainer>
-          <h2>Shortened URL</h2>
-          <p>{`http://localhost:5001/api/shortUrl/${shortUrl}`}</p>
-        </style_1.ShortUrlContainer>)}
+      <form className="form" onSubmit={handleSubmit}>
+        <label className="label">
+          URL Completa:
+          <input className="input" type="text" value={fullUrl} onChange={(e) => setFullUrl(e.target.value)} placeholder="Coloque aqui o link para ser Encurtado" required/>
+        </label>
+        <button className="button" type="submit">
+          Shorten URL
+        </button>
+      </form>
 
-      {error && (<style_1.Message isError>
+      {shortUrl && (<div className="shortUrlContainer">
+          <h2>Link Encurtado:</h2>
+          <a href={`http://localhost:5001/api/shortUrl/${shortUrl}`} target="_blank" rel="noopener noreferrer" className="shortUrlLink">
+            {`http://localhost:5001/api/shortUrl/${shortUrl}`}
+          </a>
+        </div>)}
+
+      {error && (<div className={`message error`}>
           <p>{error}</p>
-        </style_1.Message>)}
-    </style_1.Container>);
+        </div>)}
+    </div>);
 };
 exports.default = UrlShortenerForm;

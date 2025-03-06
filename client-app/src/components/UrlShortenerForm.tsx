@@ -1,28 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Importando o useNavigate para redirecionamento
+import { useNavigate } from "react-router-dom";
 import { useMsal } from "@azure/msal-react";
 import "../components/urlShortenerForm.css";
 import LogoutButton from "./LogoutButton";
+
 
 const UrlShortenerForm: React.FC = () => {
   const [fullUrl, setFullUrl] = useState<string>("");
   const [shortUrl, setShortUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [clickCount, setClickCount] = useState<number>(0); // Estado para armazenar número de cliques
 
-  const { accounts } = useMsal(); // Pegando as contas autenticadas
-  const navigate = useNavigate(); // Hook de navegação para redirecionar
+  const { accounts } = useMsal();
+  const navigate = useNavigate();
+  
 
   // Verifique se o usuário está autenticado
   useEffect(() => {
     if (!accounts || accounts.length === 0) {
-      // Caso não haja conta logada, redireciona para a página de login
-      navigate("/login"); // Rota de login, altere se necessário
+      navigate("/login");
     }
   }, [accounts, navigate]);
+
+  const [isLoading, setIsLoading] = useState(false);
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsLoading(true); // Ativa o estado de carregamento
 
     try {
       const response = await fetch("http://localhost:5001/api/shortUrl", {
@@ -33,9 +39,13 @@ const UrlShortenerForm: React.FC = () => {
         body: JSON.stringify({ fullUrl }),
       });
 
+      setIsLoading(false); // Desativa o carregamento
+
+
       if (response.ok) {
         const data = await response.json();
-        setShortUrl(data.shortUrl);
+        setShortUrl(data.shortUrl); // A URL encurtada é recebida aqui
+        setClickCount(data.clicks); // Resetar contagem de cliques após encurtar
       } else {
         const err = await response.json();
         setError(err.message || "Something went wrong!");
@@ -45,11 +55,11 @@ const UrlShortenerForm: React.FC = () => {
     }
   };
 
+
   return (
     <div className="container">
       <h1 className="title">Encurtador de link</h1>
-      
-      {/* Adicionando o botão de logout */}
+      {isLoading && <p>Loading...</p>}
       <LogoutButton />
 
       <form className="form" onSubmit={handleSubmit}>
@@ -80,6 +90,7 @@ const UrlShortenerForm: React.FC = () => {
           >
             {`http://localhost:5001/api/shortUrl/${shortUrl}`}
           </a>
+          <h3>Número de cliques: {clickCount}</h3>
         </div>
       )}
 
