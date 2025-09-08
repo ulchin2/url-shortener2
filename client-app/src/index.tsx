@@ -1,7 +1,5 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { MsalProvider } from "@azure/msal-react";
-import { msalInstance } from "../src/components/msalConfig";
 import App from "./App";
 
 const root = ReactDOM.createRoot(
@@ -9,8 +7,6 @@ const root = ReactDOM.createRoot(
 );
 root.render(
   <React.StrictMode>
-    <MsalProvider instance={msalInstance}>
-      <App />
-    </MsalProvider>
+    <App />
   </React.StrictMode>
 );

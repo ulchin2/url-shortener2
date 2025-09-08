@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useMsal } from "@azure/msal-react";
+import React, { useState } from "react";
 import "../components/urlShortenerForm.css";
 import LogoutButton from "./LogoutButton";
 
@@ -11,16 +9,8 @@ const UrlShortenerForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [clickCount, setClickCount] = useState<number>(0); // Estado para armazenar número de cliques
 
-  const { accounts } = useMsal();
-  const navigate = useNavigate();
   
 
-  // Verifique se o usuário está autenticado
-  useEffect(() => {
-    if (!accounts || accounts.length === 0) {
-      navigate("/login");
-    }
-  }, [accounts, navigate]);
 
   const [isLoading, setIsLoading] = useState(false);
   
